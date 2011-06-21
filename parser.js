@@ -47,6 +47,7 @@
 
 "use strict";
 
+var Base = require('https!raw.github.com/Gozala/selfish/v0.0.3/selfish').Base;
 var messageUtils = require("./message-utils");
 var ExceptionUtils = messageUtils.ExceptionUtils;
 var AlertMessageService = messageUtils.AlertMessageService;
@@ -79,16 +80,7 @@ var gOldAlerted = false;
 // file--this, in turn, is controlled by a {{{makeXxParser}}} factory function;
 // take a look at en.js for an example.
 
-function Parser(props) {
-  if (!(this instanceof Parser))
-    return new Parser(props);
-  if (typeof props === "string")
-    this.lang = props;
-  else
-    for (var key in props) this[key] = props[key];
-}
-exports.Parser = Parser;
-Parser.prototype = {
+exports.Parser = Base.extend({
   // References to contextUtils and suggestionMemory modules; makeParserForLanguage()
   // in namespace.js will, and must, set these to either a stub for testing, or to the
   // real module.
@@ -1630,7 +1622,7 @@ Parser.prototype = {
     // Also keep track of total number of times verb has been used, regardless of input:
     this._suggestionMemory.remember("", chosenVerb);
   }
-}
+});
 
 // == {{{ParseQuery}}} ==
 //
@@ -1644,73 +1636,74 @@ Parser.prototype = {
 // The {{{Parser#newQuery()}}} method is used to initiate
 // a query instead of calling {{{new ParseQuery()}}} directly.
 //
-var ParseQuery = function(parser, queryString, selObj, context,
-                            maxSuggestions, dontRunImmediately) {
-  this._date = new Date();
-  this._idTime = this._date.getTime();
-  this.parser = parser;
-  this.input = queryString;
-  //chop off leading and trailing whitespace from input
-  this.input = this.input.replace(/^\s+|\s+$/g, '');
-  this.context = context;
-  this.maxSuggestions = maxSuggestions;
-  this.selObj = selObj;
+var ParseQuery = Base.extend({
+  new: function ParseQuery(parser, queryString, selObj, context, maxSuggestions, dontRunImmediately) {
+    var query = Base.new.call(this);
+    query._date = new Date();
+    query._idTime = query._date.getTime();
+    query.parser = parser;
+    query.input = queryString;
+    //chop off leading and trailing whitespace from input
+    query.input = query.input.replace(/^\s+|\s+$/g, '');
+    query.context = context;
+    query.maxSuggestions = maxSuggestions;
+    query.selObj = selObj;
 
-  // _detectionTracker is an instance of NounTypeDetectionTracker which
-  // keeps track of all the nountype detections.
-  this._detectionTracker = new NounTypeDetectionTracker(this);
+    // _detectionTracker is an instance of NounTypeDetectionTracker which
+    // keeps track of all the nountype detections.
+    query._detectionTracker = new NounTypeDetectionTracker(query);
 
-  // code flow control stuff
-  // used in async faux-thread contrl
-  this.finished = false;
-  this._keepworking = true;
+    // code flow control stuff
+    // used in async faux-thread contrl
+    query.finished = false;
+    query._keepworking = true;
 
-  // ** {{{ParseQuery#_times}}} **
-  //
-  // {{{_times}}} is an array of post-UNIX epoch timestamps for each step
-  // of the derivation. You can check it later to see how long different
-  // steps took.
-  this._times = [];
+    // ** {{{ParseQuery#_times}}} **
+    //
+    // {{{_times}}} is an array of post-UNIX epoch timestamps for each step
+    // of the derivation. You can check it later to see how long different
+    // steps took.
+    query._times = [];
 
-  // ** {{{ParseQuery#_step}}} **
-  //
-  // This {{{_step}}} property is increased throughout {{{_yieldParse()}}}
-  // so you can check later to see how far the query went.
-  this._step = 0;
+    // ** {{{ParseQuery#_step}}} **
+    //
+    // This {{{_step}}} property is increased throughout {{{_yieldParse()}}}
+    // so you can check later to see how far the query went.
+    query._step = 0;
 
-  // ** {{{ParseQuery#lastParseId}}} **
-  // This is a counter of the number of "parses" (including intermediate
-  // parses) created during the parse query. Used to ID parses.
-  this.lastParseId = 0;
+    // ** {{{ParseQuery#lastParseId}}} **
+    // This is a counter of the number of "parses" (including intermediate
+    // parses) created during the parse query. Used to ID parses.
+    query.lastParseId = 0;
 
-  // TODO: Think about putting some components into
-  // [[https://developer.mozilla.org/En/DOM/Worker|Worker threads]].
+    // TODO: Think about putting some components into
+    // [[https://developer.mozilla.org/En/DOM/Worker|Worker threads]].
 
-  // Internal variables
-  // These are filled in one by one as we go along.
-  this._input = '';
-  this._preParses = [];
-  this._possibleParses = [];
-  this._verbedParses = [];
-  this._topScores = [];
+    // Internal variables
+    // These are filled in one by one as we go along.
+    query._input = '';
+    query._preParses = [];
+    query._possibleParses = [];
+    query._verbedParses = [];
+    query._topScores = [];
 
-  // The percentage of nountype detection completed on last update
-  this._previousProgress = 0;
+    // The percentage of nountype detection completed on last update
+    query._previousProgress = 0;
 
-  // this is a list of all Parse's as created.
-  this._allParses = {};
+    // this is a list of all Parse's as created.
+    query._allParses = {};
 
-  // ** {{{ParseQuery#_scoredParses}}} **
-  this._scoredParses = [];
+    // ** {{{ParseQuery#_scoredParses}}} **
+    query._scoredParses = [];
 
 
-  this.dump("Making a new parser2 query: " + this.input);
+    query.dump("Making a new parser2 query: " + query.input);
 
-  if (!dontRunImmediately)
-    this.run();
-}
+    if (!dontRunImmediately)
+      query.run();
 
-ParseQuery.prototype = {
+    return query;
+  },
   dump: function PQ_dump(msg) {
     Utils.dump(this._idTime + ":" + (new Date - this._idTime), msg);
   },
@@ -2141,7 +2134,7 @@ ParseQuery.prototype = {
 
     return true;
   }
-};
+});
 
 // == {{{NounTypeDetectionTracker}}} ==
 //
@@ -2149,11 +2142,13 @@ ParseQuery.prototype = {
 // {{{ParseQuery#_detectionTracker}}} which is used to keep track of which
 // (argText,nountypeId) pairs have been started or completed
 
-var NounTypeDetectionTracker = function(query) {
-  this._query = query;
-  this.detectionSpace = {};
-}
-NounTypeDetectionTracker.prototype = {
+var NounTypeDetectionTracker = Base.extend({
+  new: function NounTypeDetectionTracker(query) {
+    var self = Base.new.call(this)
+    self._query = query;
+    self.detectionSpace = {};
+    return self;
+  },
   _query: null,
   detectionSpace: {},
   _ensureNode: function DT__ensureNode(arg,id) {
@@ -2288,12 +2283,14 @@ NounTypeDetectionTracker.prototype = {
     }
     return (count/total);
   }
-}
+});
 
-var NounCache = function(parser) {
-  this.cacheSpace = {};
-}
-NounCache.prototype = {
+var NounCache = Base.extend({
+  new: function NounCache(parser) {
+    var self = Base.new.call(this);
+    self.cacheSpace = {};
+    return self;
+  },
   cacheSpace: {},
   _ensureNode: function NC__ensureNode(arg,id) {
     if (!(arg in this.cacheSpace))
@@ -2373,7 +2370,7 @@ NounCache.prototype = {
                                      suggs: [] };
     }
   }
-}
+});
 
 // == {{{Parse}}} ==
 //
@@ -2387,24 +2384,24 @@ NounCache.prototype = {
 // Individual arguments in
 // the property {{{args}}} should be set individually afterwards.
 
-var Parse = function(query, input, verb, argString, parent) {
-  this._query = query;
-  this.input = input;
-  this._verb = verb;
-  this.argString = argString;
-  this.args = {};
-  // this is the internal score variable--use the score property
-  this._score = 0;
-  this.scoreMultiplier = 0;
-  // !complete means we're still parsing or waiting for async nountypes
-  this.complete = false;
-  this._id = (query.lastParseId ++);
-  if (parent)
-    this._parent = parent;
-  this._query._allParses[this._id] = this;
-}
-
-Parse.prototype = {
+var Parse = Base.extend({
+  new: function Parse(query, input, verb, argString, parent) {
+    var self = Base.new.call(this);
+    self._query = query;
+    self.input = input;
+    self._verb = verb;
+    self.argString = argString;
+    self.args = {};
+    // this is the internal score variable--use the score property
+    self._score = 0;
+    self.scoreMultiplier = 0;
+    // !complete means we're still parsing or waiting for async nountypes
+    self.complete = false;
+    self._id = (query.lastParseId ++);
+    if (parent)
+      self._parent = parent;
+    self._query._allParses[this._id] = this;
+  },
   // ** {{{Parse#displayText}}} **
   //
   // {{{displayText}}} prints the verb and arguments in the parse by
@@ -2819,7 +2816,7 @@ Parse.prototype = {
     ret._caller = this.copy.caller.name;
     return ret;
   }
-};
+});
 
 function byScoreDescending(a, b) { return b.score - a.score; }
 

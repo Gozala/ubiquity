@@ -47,30 +47,29 @@
 "use strict";
 
 var Parser = require('../parser').Parser;
-exports.makeParser = function makeParser() {
-  return new Parser({
-    lang: "en",
-    anaphora: ["this", "that", "it", "selection", "him", "her", "them"],
-    roles: [
-      {role: "goal", delimiter: "to"},
-      {role: "source", delimiter: "from"},
-      {role: "location", delimiter: "near"},
-      {role: "location", delimiter: "on"},
-      {role: "location", delimiter: "at"},
-      {role: "location", delimiter: "in"},
-      {role: "time", delimiter: "at"},
-      {role: "time", delimiter: "on"},
-      {role: "instrument", delimiter: "with"},
-      {role: "instrument", delimiter: "using"},
-      {role: "format", delimiter: "in"},
-      {role: "modifier", delimiter: "of"},
-      {role: "modifier", delimiter: "for"},
-      {role: "alias", delimiter: "as"},
-      {role: "alias", delimiter: "named"}
-    ],
-    branching: "right",
-    verbFinalMultiplier: 0.3
-  });
-};
+exports.Parser = Parser.extend({
+  lang: 'en',
+  title: 'English',
+  branching: "right",
+  verbFinalMultiplier: 0.3,
+  anaphora: [ "this", "that", "it", "selection", "him", "her", "them" ],
+  roles: [
+    {role: "goal", delimiter: "to"},
+    {role: "source", delimiter: "from"},
+    {role: "location", delimiter: "near"},
+    {role: "location", delimiter: "on"},
+    {role: "location", delimiter: "at"},
+    {role: "location", delimiter: "in"},
+    {role: "time", delimiter: "at"},
+    {role: "time", delimiter: "on"},
+    {role: "instrument", delimiter: "with"},
+    {role: "instrument", delimiter: "using"},
+    {role: "format", delimiter: "in"},
+    {role: "modifier", delimiter: "of"},
+    {role: "modifier", delimiter: "for"},
+    {role: "alias", delimiter: "as"},
+    {role: "alias", delimiter: "named"}
+  ]
+});
 
 });
