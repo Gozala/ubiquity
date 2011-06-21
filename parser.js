@@ -23,6 +23,7 @@
  *   Blair McBride <unfocused@gmail.com>
  *   Satoshi Murakami <murky.satyr@gmail.com>
  *   Brandon Pung <brandonpung@gmail.com>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -38,17 +39,24 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var EXPORTED_SYMBOLS = ["Parser"];
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
+(typeof define === "undefined" ? function($) { $(require, exports, module) } : define)(function(require, exports, module) {
 
-const Cu = Components.utils;
+"use strict";
+
+var messageUtils = require("./message-utils");
+var ExceptionUtils = messageUtils.ExceptionUtils;
+var AlertMessageService = messageUtils.AlertMessageService;
+var Utils = require('./utils');
 
 // This turns on a number of checks which disallow parses with
 // multiple arguments in the same role.
 // This speeds things up considerably for longer parses.
-const DONT_PARSE_MULTIPLE_ARGS_PER_ROLE = true;
+var DONT_PARSE_MULTIPLE_ARGS_PER_ROLE = true;
 
-Cu.import("resource://ubiquity/modules/utils.js");
-Cu.import("resource://ubiquity/modules/msgservice.js");
 
 var gOldAlerted = false;
 
@@ -72,11 +80,14 @@ var gOldAlerted = false;
 // take a look at en.js for an example.
 
 function Parser(props) {
+  if (!(this instanceof Parser))
+    return new Parser(props);
   if (typeof props === "string")
     this.lang = props;
   else
     for (var key in props) this[key] = props[key];
 }
+exports.Parser = Parser;
 Parser.prototype = {
   // References to contextUtils and suggestionMemory modules; makeParserForLanguage()
   // in namespace.js will, and must, set these to either a stub for testing, or to the
@@ -212,10 +223,10 @@ Parser.prototype = {
                                 "as they are not compatible with Parser 2.");
       gOldAlerted = true;
     }
-    
+
     this.refreshCommandList();
   },
-  
+
   addCommandToList: function addCommandToList(command) {
     if (command.oldAPI && !gOldAlerted) {
       var msgService = new AlertMessageService();
@@ -224,7 +235,7 @@ Parser.prototype = {
       gOldAlerted = true;
     }
   },
-  
+
   refreshCommandList: function addCommandToList() {
 
     var verbs = this._verbList;
@@ -2810,4 +2821,6 @@ Parse.prototype = {
   }
 };
 
-function byScoreDescending(a, b) b.score - a.score;
+function byScoreDescending(a, b) { return b.score - a.score; }
+
+});

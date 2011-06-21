@@ -22,6 +22,7 @@
  *   Blair McBride <unfocused@gmail.com>
  *   Jono DiCarlo <jdicarlo@mozilla.com>
  *   Satoshi Murakami <murky.satyr@gmail.com>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -41,17 +42,25 @@
 // A small (?) library of all-purpose, general utility functions
 // for use by chrome code.  Everything clients need is contained within
 // the {{{Utils}}} namespace.
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
 
-var EXPORTED_SYMBOLS = ["Utils"];
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
+(typeof define === "undefined" ? function($) { $(require, exports, module) } : define)(function(require, exports, module) {
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
-const {nsISupportsString, nsITransferable} = Ci;
+"use strict";
+
+const { Cc, Ci, Cu } = require("chrome");
+const { nsISupportsString, nsITransferable } = Ci;
 const LOG_PREFIX = "Ubiquity: ";
 const TO_STRING = Object.prototype.toString;
 
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-
-var Utils = {
+var Utils = module.exports = {
   toString: function toString() "[object UbiquityUtils]",
 
   NS_MATHML: "http://www.w3.org/1998/Math/MathML",
@@ -416,21 +425,6 @@ function clearTimeout(timerID) {
   return true;
 }
 
-// Support infrastructures for the timeout-related functions.
-var gTimers = {};
-var gNextTimerID = 1;
-function __TimerCallback(id, cb, args) {
-  this._id = id;
-  this._callback = typeof cb === "function" ? cb : Function("_", cb);
-  this._args = args;
-}
-__TimerCallback.prototype = {
-  notify: function TC_notify(timer) {
-    delete gTimers[this._id];
-    this._callback.apply(null, this._args);
-  },
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsITimerCallback]),
-};
 
 // === {{{ Utils.uri(spec, defaultUrl) }}} ===
 // Given a string representing an absolute URL or a {{{nsIURI}}}
@@ -503,7 +497,7 @@ function openUrlInBrowser(urlString, postData) {
 
   var browserWindow = Utils.currentChromeWindow;
   var browser = browserWindow.gBrowser;
-  var openPref = gPrefBranch.getIntPref("browser.link.open_newwindow");
+  var openPref = Utils.gPrefBranch.getIntPref("browser.link.open_newwindow");
 
   //3 (default in Firefox 2 and above): In a new tab
   //2 (default in SeaMonkey and Firefox 1.5): In a new window
@@ -513,7 +507,7 @@ function openUrlInBrowser(urlString, postData) {
     if (openPref === 3) {
       let tab = browser.addTab(
         urlString, null, null, postInputStream, false, false);
-      let fore = !gPrefBranch.getBoolPref(
+      let fore = !Utils.gPrefBranch.getBoolPref(
         "browser.tabs.loadDivertedInBackground");
       let {shiftKey} = (browserWindow.gUbiquity || 0).lastKeyEvent || 0;
       if (fore ^ shiftKey) browser.selectedTab = tab;
@@ -1058,7 +1052,7 @@ function extend(target) {
 
 const {PREF_STRING, PREF_BOOL, PREF_INT} = Ci.nsIPrefBranch;
 
-defineLazyProperty(this, function gPrefBranch() (
+defineLazyProperty(Utils, function gPrefBranch() (
   Cc["@mozilla.org/preferences-service;1"]
   .getService(Ci.nsIPrefService)
   .QueryInterface(Ci.nsIPrefBranch2)));
@@ -1070,17 +1064,17 @@ var gPrefs = Utils.prefs = {
   // [[https://developer.mozilla.org/en/Toolkit_API/extIPreferenceBranch]]'s
   // namesakes. Also available in the names of {{{get()}}} and {{{set()}}}.
   get: function prefs_get(name, value) {
-    switch (gPrefBranch.getPrefType(name)) {
+    switch (Utils.gPrefBranch.getPrefType(name)) {
       case PREF_STRING:
       try {
-        return gPrefBranch.getComplexValue(
+        return Utils.gPrefBranch.getComplexValue(
           name, Ci.nsIPrefLocalizedString).data;
       } catch ([]) {}
-      return gPrefBranch.getComplexValue(name, nsISupportsString).data;
+      return Utils.gPrefBranch.getComplexValue(name, nsISupportsString).data;
       case PREF_BOOL:
-      return gPrefBranch.getBoolPref(name);
+      return Utils.gPrefBranch.getBoolPref(name);
       case PREF_INT:
-      return gPrefBranch.getIntPref(name);
+      return Utils.gPrefBranch.getIntPref(name);
     }
     return value;
   },
@@ -1090,10 +1084,10 @@ var gPrefs = Utils.prefs = {
         let ss = (Cc["@mozilla.org/supports-string;1"]
                   .createInstance(nsISupportsString));
         ss.data = value;
-        gPrefBranch.setComplexValue(name, nsISupportsString, ss);
+        Utils.gPrefBranch.setComplexValue(name, nsISupportsString, ss);
       } break;
-      case "boolean": gPrefBranch.setBoolPref(name, value); break;
-      case "number": gPrefBranch.setIntPref(name, value); break;
+      case "boolean": Utils.gPrefBranch.setBoolPref(name, value); break;
+      case "number": Utils.gPrefBranch.setIntPref(name, value); break;
       default: throw TypeError("invalid pref value");
     }
     return value;
@@ -1102,18 +1096,18 @@ var gPrefs = Utils.prefs = {
   // Resets the {{{name}}}d preference to the default value.
   // Returns a boolean indicating whether or not the reset succeeded.
   reset: function prefs_reset(name)
-    gPrefBranch.prefHasUserValue(name) && !gPrefBranch.clearUserPref(name),
+    Utilse.gPrefBranch.prefHasUserValue(name) && !Utils.gPrefBranch.clearUserPref(name),
   // === {{{ Utils.prefs.resetBranch(name) }}} ===
   // Resets all preferences that start with {{{name}}} to the default values.
   // Returns an array of preference names that were reset.
   resetBranch: function prefs_resetBranch(name) {
-    var names = (gPrefBranch.getChildList(name, {})
-                 .filter(gPrefBranch.prefHasUserValue));
-    names.forEach(gPrefBranch.clearUserPref);
+    var names = (Utils.gPrefBranch.getChildList(name, {})
+                 .filter(Utils.gPrefBranch.prefHasUserValue));
+    names.forEach(Utils.gPrefBranch.clearUserPref);
     return names;
   },
   __noSuchMethod__:
-  function prefs_pass(name, args) gPrefBranch[name].apply(gPrefBranch, args),
+  function prefs_pass(name, args) Utils.gPrefBranch[name].apply(Utils.gPrefBranch, args),
 };
 gPrefs.getValue = gPrefs.get;
 gPrefs.setValue = gPrefs.set;
@@ -1262,7 +1256,8 @@ var gClipboard = Utils.clipboard = {
   // var [txt, htm] = Utils.clipboard.get(["text", "html"]);
   // }}}
   get: function clipboard_get(flavor) {
-    const {service, service: {kGlobalClipboard}, flavors} = gClipboard;
+    const { service, flavors} = gClipboard;
+    const { kGlobalClipboard } = service;
     function get(flavor) {
       flavor = flavors[flavor] || flavor;
       if (!service.hasDataMatchingFlavors([flavor], 1, kGlobalClipboard))
@@ -1545,3 +1540,5 @@ Utils.gist = {
     return name;
   },
 };
+
+});

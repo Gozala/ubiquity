@@ -20,6 +20,7 @@
  * Contributor(s):
  *   Atul Varma <atul@mozilla.com>
  *   Satoshi Murakami <murky.satyr@gmail.com>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -61,51 +62,39 @@
 //
 // {{{msg.onfinished}}} is a function called when the alert goes away.
 
-var EXPORTED_SYMBOLS = ["ExceptionUtils",
-                        "ErrorConsoleMessageService",
-                        "AlertMessageService",
-                        "CompositeMessageService"];
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+define(function (require, exports, module, undefined) {
 
-Cu.import("resource://ubiquity/modules/utils.js");
-Cu.import("resource://ubiquity/modules/localization_utils.js");
+"use strict";
+//const { Cc, Ci, Cu } = require("chrome");
+
+//Cu.import("resource://ubiquity/modules/utils.js");
+//Cu.import("resource://ubiquity/modules/localization_utils.js");
 
 const PREF_SHOW_ERROR = "extensions.ubiquity.displayAlertOnError";
 
-var L = LocalizationUtils.propertySelector(
-  "chrome://ubiquity/locale/coreubiquity.properties");
+//var L = LocalizationUtils.propertySelector(
+  //"chrome://ubiquity/locale/coreubiquity.properties");
 
 // == Message Service Implementations ==
 
-// === {{{ErrorConsoleMessageService}}} ===
-// This {{{MessageService}}} logs messages containing exceptions to
-// the JavaScript error console, also logging their stack traces if
-// possible.
-
-function ErrorConsoleMessageService() {}
-ErrorConsoleMessageService.prototype = {
-  displayMessage: function ECMS_displayMessage(msg) {
-    var {exception} = msg || 0;
-    if (exception == null) return;
-
-    Utils.reportError(exception);
-    var tb = ExceptionUtils.stackTrace(exception);
-    if (tb) Utils.reportError("Traceback for last exception:\n" + tb);
-  }
-};
-
-// === {{{AlertMessageService}}} ===
-// This {{{MessageService}}} uses {{{nsIAlertsService}}} to
-// non-modally display the message to the user. On Windows, this shows
-// up as a "toaster" notification at the bottom-right of the
-// screen. On OS X, it's shown using
-// [[http://en.wikipedia.org/wiki/Growl_%28software%29|Growl]].
-
+/**
+ * === {{{AlertMessageService}}} ===
+ * This {{{MessageService}}} uses {{{nsIAlertsService}}} to
+ * non-modally display the message to the user. On Windows, this shows
+ * up as a "toaster" notification at the bottom-right of the
+ * screen. On OS X, it's shown using
+ * [[http://en.wikipedia.org/wiki/Growl_%28software%29|Growl]].
+ */
 function AlertMessageService() {}
+exports.AlertMessageService = AlertMessageService;
 AlertMessageService.prototype = {
   DEFAULT_ICON : "chrome://ubiquity/skin/icons/favicon.ico",
-  DEFAULT_TITLE: L("ubiquity.msgservice.defaultmsgtitle"),
+  DEFAULT_TITLE: /*L(*/"ubiquity.msgservice.defaultmsgtitle"/*)*/,
   displayMessage: function AMS_displayMessage(msg) {
     var text  = "";
     var title = this.DEFAULT_TITLE;
@@ -149,32 +138,12 @@ AlertMessageService.prototype = {
   }
 };
 
-// === {{{CompositeMessageService}}} ===
-// Combines one or more {{{MessageService}}} implementations under a
-// single {{{MessageService}}} interface.
-//
-// Use the {{{add()}}} method to add new implementations.
-
-function CompositeMessageService() {
-  this._services = [];
-}
-CompositeMessageService.prototype = {
-  add: function CMS_add(service) {
-    this._services.push(service);
-    return this;
-  },
-
-  displayMessage: function CMS_displayMessage(msg) {
-    for each (let service in this._services)
-      service.displayMessage(msg);
-  }
-};
-
-// == Exception Utilities ==
-// The {{{ExceptionUtils}}} namespace provides some functionality for
-// introspecting JavaScript and XPCOM exceptions.
-
-var ExceptionUtils = {
+/**
+ * == Exception Utilities ==
+ * The `ExceptionUtils` namespace provides some functionality for
+ * introspecting JavaScript and XPCOM exceptions.
+ */
+exports.ExceptionUtils = {
   stackTraceFromFrame: function EU_stackTraceFromFrame(frame, formatter) {
     if (!formatter)
       formatter = function EU_defaultFormatter(frame) { return frame; };
@@ -210,3 +179,5 @@ var ExceptionUtils = {
     return output;
   }
 };
+
+})
