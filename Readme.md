@@ -11,6 +11,6 @@ Natural language driven task interface.
 
 ## Require ##
 
-   var ubiquity = require('https!raw.github.com/Gozala/ubiquity/v0.2.0/ubiquity.js')
+    var ubiquity = require('https!raw.github.com/Gozala/ubiquity/v0.2.0/ubiquity.js')
 
 [ubiquity]:https://mozillalabs.com/ubiquity/
