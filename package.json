@@ -1,0 +1,33 @@
+{
+  "name": "ubiquity",
+  "id": "ubiquity",
+  "version": "0.2.0",
+  "description": "Natural language driven task interface.",
+  "keywords": [ "ubiquity", "commands", "tasks", "shell" ],
+  "author": "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)",
+  "homepage": "https://github.com/Gozala/ubiquity",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gozala/ubiquity.git",
+    "web": "https://github.com/Gozala/ubiquity"
+  },
+  "bugs": {
+    "web": "http://github.com/Gozala/ubiquity/issues/"
+  },
+  "devDependencies": {
+    "test": ">=0.0.10",
+    "graphquire": ">=0.6.1"
+  },
+  "main": "./ubiquity.js",
+  "engines": {
+    "node": "0.4.x"
+  },
+  "scripts": {
+    "test": "node tests/test-ubiquity.js",
+    "install": "graphquire --clean --write --cache-path ./"
+  },
+  "licenses": [{
+    "type" : "MIT",
+    "url" : "http://jeditoolkit.com/LICENSE"
+  }]
+}
