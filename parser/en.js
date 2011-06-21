@@ -21,6 +21,7 @@
  *   Michael Yoshitaka Erlewine <mitcho@mitcho.com>
  *   Jono DiCarlo <jdicarlo@mozilla.com>
  *   Brandon Pung <brandonpung@gmail.com>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -36,26 +37,40 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-function makeParser() new Parser({
-  lang: "en",
-  anaphora: ["this", "that", "it", "selection", "him", "her", "them"],
-  roles: [
-    {role: "goal", delimiter: "to"},
-    {role: "source", delimiter: "from"},
-    {role: "location", delimiter: "near"},
-    {role: "location", delimiter: "on"},
-    {role: "location", delimiter: "at"},
-    {role: "location", delimiter: "in"},
-    {role: "time", delimiter: "at"},
-    {role: "time", delimiter: "on"},
-    {role: "instrument", delimiter: "with"},
-    {role: "instrument", delimiter: "using"},
-    {role: "format", delimiter: "in"},
-    {role: "modifier", delimiter: "of"},
-    {role: "modifier", delimiter: "for"},
-    {role: "alias", delimiter: "as"},
-    {role: "alias", delimiter: "named"}
-  ],
-  branching: "right",
-  verbFinalMultiplier: 0.3
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
+
+(typeof define === "undefined" ? function ($) { $(require, exports, module); } : define)(function (require, exports, module) {
+
+"use strict";
+
+var Parser = require('../parser').Parser;
+exports.makeParser = function makeParser() {
+  return new Parser({
+    lang: "en",
+    anaphora: ["this", "that", "it", "selection", "him", "her", "them"],
+    roles: [
+      {role: "goal", delimiter: "to"},
+      {role: "source", delimiter: "from"},
+      {role: "location", delimiter: "near"},
+      {role: "location", delimiter: "on"},
+      {role: "location", delimiter: "at"},
+      {role: "location", delimiter: "in"},
+      {role: "time", delimiter: "at"},
+      {role: "time", delimiter: "on"},
+      {role: "instrument", delimiter: "with"},
+      {role: "instrument", delimiter: "using"},
+      {role: "format", delimiter: "in"},
+      {role: "modifier", delimiter: "of"},
+      {role: "modifier", delimiter: "for"},
+      {role: "alias", delimiter: "as"},
+      {role: "alias", delimiter: "named"}
+    ],
+    branching: "right",
+    verbFinalMultiplier: 0.3
+  });
+};
+
 });

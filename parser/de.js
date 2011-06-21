@@ -21,6 +21,7 @@
  *   Michael Yoshitaka Erlewine <mitcho@mitcho.com>
  *   Jono DiCarlo <jdicarlo@mozilla.com>
  *   Christian Sonne <cers@geeksbynature.dk>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -36,7 +37,16 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-function makeParser() {
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
+(typeof define === "undefined" ? function($) { $(require, exports, module) } : define)(function(require, exports, module) {
+
+"use strict";
+
+const Parser = require('../parser').Parser;
+exports.makeParser = function makeParser() {
   var de = new Parser("de");
   de.anaphora = ["das","es","markierung","alles"];
   de.roles = [
@@ -56,9 +66,11 @@ function makeParser() {
     {role: "instrument", delimiter: "via"},
     {role: "instrument", delimiter: "durch"},
     {role: "format", delimiter: "in"},
-    {role: "format", delimiter: "als"},
+    {role: "format", delimiter: "als"}
   ];
   de.branching = "right";
 
-  return de
+  return de;
 };
+
+});

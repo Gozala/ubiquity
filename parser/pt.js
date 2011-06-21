@@ -22,6 +22,7 @@
  *   Jono DiCarlo <jdicarlo@mozilla.com>
  *   Felipe Gomes <felipc@gmail.com>
  *   Fernando Takai <fernando.takai@gmail.com>    
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -37,7 +38,16 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-function makeParser() {
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
+(typeof define === "undefined" ? function($) { $(require, exports, module) } : define)(function(require, exports, module) {
+
+"use strict";
+
+var Parser = require('../parser').Parser;
+exports.makeParser = function makeParser() {
   var pt = new Parser('pt');
   pt.roles = [
     {role: 'goal', delimiter: 'à'},
@@ -84,7 +94,7 @@ function makeParser() {
      removing it from the argument and putting it on the prefix */
   pt.argumentNormalizer = new RegExp("(^(o|a|os|as)\\s+)(.*)$", "i");
   pt.normalizeArgument = function(input) {
-    let matches = input.match(this.argumentNormalizer);
+    var matches = input.match(this.argumentNormalizer);
     if (matches != null)
       return [{prefix:matches[1], newInput:matches[3], suffix:''}];
     return [];
@@ -92,3 +102,5 @@ function makeParser() {
 
   return pt;
 };
+
+});

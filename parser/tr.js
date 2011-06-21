@@ -21,6 +21,7 @@
  *   Michael Yoshitaka Erlewine <mitcho@mitcho.com>
  *   kelopez
  *   Ayhan Eses-ayhan515 <paylasimlarimiz@gmail.com>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,34 +36,43 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
-function makeParser() {
+
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
+(typeof define === "undefined" ? function($) { $(require, exports, module) } : define)(function(require, exports, module) {
+
+"use strict";
+
+var Parser = require('../parser').Parser;
+exports.makeParser = function makeParser() {
   var tr = new Parser('tr');
   tr.roles = [
-	{role: 'goal', delimiter: 'kime'},
-	{role: 'goal', delimiter: 'þundan'},
-	{role: 'goal', delimiter: 'a'},
-	{role: 'source', delimiter: 'den'},
-	{role: 'source', delimiter: 'de'},
-	{role: 'location', delimiter: 'daki'},
-	{role: 'time', delimiter: 'de'},
-	{role: 'instrument', delimiter: 'dan'},
-	{role: 'instrument', delimiter: 'kullanarak'},
-	{role: 'format', delimiter: 'olarak'},
-	{role: 'alias', delimiter: 'como'},
-	{role: 'modifier', delimiter: 'de'},
+    {role: 'goal', delimiter: 'kime'},
+    {role: 'goal', delimiter: 'þundan'},
+    {role: 'goal', delimiter: 'a'},
+    {role: 'source', delimiter: 'den'},
+    {role: 'source', delimiter: 'de'},
+    {role: 'location', delimiter: 'daki'},
+    {role: 'time', delimiter: 'de'},
+    {role: 'instrument', delimiter: 'dan'},
+    {role: 'instrument', delimiter: 'kullanarak'},
+    {role: 'format', delimiter: 'olarak'},
+    {role: 'alias', delimiter: 'como'},
+    {role: 'modifier', delimiter: 'de'}
   ];
 
   tr.argumentNormalizer = new RegExp('^(el|lo\\s+|la\\s+)(.+)()$','i');
   tr.normalizeArgument = function(input) {
-    let matches = input.match(this.argumentNormalizer);
+    var matches = input.match(this.argumentNormalizer);
     if (matches != null)
       return [{prefix:matches[1], newInput:matches[2], suffix:matches[3]}];
     return [];
   },
 
   tr.anaphora = ["bu", "bu", "seçim", "o", "o", "onlar", "onlar"];
-  
+
   tr.branching = 'right';
 
   tr.clitics = [
@@ -74,3 +84,5 @@ function makeParser() {
 
   return tr;
 };
+
+});

@@ -21,6 +21,7 @@
  *   Michael Yoshitaka Erlewine <mitcho@mitcho.com>
  *   Jono DiCarlo <jdicarlo@mozilla.com>
  *   Toni Hermoso Pulido <toniher@softcatala.cat>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,8 +36,17 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
-function makeParser() {
+
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
+(typeof define === "undefined" ? function($) { $(require, exports, module) } : define)(function(require, exports, module) {
+
+"use strict";
+
+var Parser = require('../parser').Parser;
+exports.makeParser = function makeParser() {
   var ca = new Parser('ca');
   ca.roles = [
     {role: 'goal', delimiter: 'a'},
@@ -53,11 +63,11 @@ function makeParser() {
 
   ca.argumentNormalizer = new RegExp('^(el\\s+|la\\s+|les\\s+|l\')(.+)()$','i');
   ca.normalizeArgument = function(input) {
-    let matches = input.match(this.argumentNormalizer);
+    var matches = input.match(this.argumentNormalizer);
     if (matches != null)
-      return [{prefix:matches[1], newInput:matches[2], suffix:matches[3]}];
+      return [{ prefix:matches[1], newInput: matches[2], suffix: matches[3]}];
     return [];
-  },
+  }
 
   ca.anaphora = ["açò", "allò", "això", "la selecció"];
   
@@ -72,3 +82,5 @@ function makeParser() {
 
   return ca;
 };
+
+});

@@ -21,6 +21,7 @@
  *   Michael Yoshitaka Erlewine <mitcho@mitcho.com>
  *   kelopez
  *   Roberto MuÃ±oz GÃ³mez <munoz.roberto@gmail.com>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,31 +36,40 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- 
-function makeParser() {
+
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
+(typeof define === "undefined" ? function($) { $(require, exports, module) } : define)(function(require, exports, module) {
+
+"use strict";
+
+var Parser = require('../parser').Parser;
+exports.makeParser = function makeParser() {
   var es = new Parser('es');
   es.roles = [
-	{role: 'goal', delimiter: 'hasta'},
-	{role: 'goal', delimiter: 'hacia'},
-	{role: 'goal', delimiter: 'a'},
-	{role: 'source', delimiter: 'desde'},
-	{role: 'source', delimiter: 'de'},
-	{role: 'location', delimiter: 'en'},
-	{role: 'time', delimiter: 'a'},
-	{role: 'instrument', delimiter: 'con'},
-	{role: 'instrument', delimiter: 'usando'},
-	{role: 'format', delimiter: 'en'},
-	{role: 'alias', delimiter: 'como'},
-	{role: 'modifier', delimiter: 'de'},
+    {role: 'goal', delimiter: 'hasta'},
+    {role: 'goal', delimiter: 'hacia'},
+    {role: 'goal', delimiter: 'a'},
+    {role: 'source', delimiter: 'desde'},
+    {role: 'source', delimiter: 'de'},
+    {role: 'location', delimiter: 'en'},
+    {role: 'time', delimiter: 'a'},
+    {role: 'instrument', delimiter: 'con'},
+    {role: 'instrument', delimiter: 'usando'},
+    {role: 'format', delimiter: 'en'},
+    {role: 'alias', delimiter: 'como'},
+    {role: 'modifier', delimiter: 'de'},
   ];
 
   es.argumentNormalizer = new RegExp('^(el|lo\\s+|la\\s+)(.+)()$','i');
   es.normalizeArgument = function(input) {
-    let matches = input.match(this.argumentNormalizer);
+    var matches = input.match(this.argumentNormalizer);
     if (matches != null)
       return [{prefix:matches[1], newInput:matches[2], suffix:matches[3]}];
     return [];
-  },
+  }
 
   es.anaphora = ["esto", "eso", "la selección", "él", "ella", "ellos", "ellas"];
   
@@ -74,3 +84,5 @@ function makeParser() {
 
   return es;
 };
+
+});
