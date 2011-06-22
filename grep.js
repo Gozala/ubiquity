@@ -56,6 +56,7 @@ var SCORE_LENGTH = 0.25
 var SCORE_INDEX = 1 - SCORE_BASE - SCORE_LENGTH
 
 function score(pattern, input) {
+  input = String(input)
   var match, length = input.length, value = null
   if ((match = pattern.exec(input))) {
     value = SCORE_BASE +
