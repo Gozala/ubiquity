@@ -8,5 +8,6 @@
 "use strict";
 
 exports.Parser = require('./parser');
+exports.Noun = require('./noun');
 
 })

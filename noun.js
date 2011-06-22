@@ -26,6 +26,7 @@
  *   Abimanyu Raja <abimanyuraja@gmail.com>
  *   Michael Yoshitaka Erlewine <mitcho@mitcho.com>
  *   Satoshi Murakami <murky.satyr@gmail.com>
+ *   Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -41,246 +42,174 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-// = NounUtils =
-//
-// A library of noun related utilities.
-// {{{CmdUtils}}} inherits them all.
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true
+         forin: true latedef: false supernew: true */
+/*global define: true */
 
-var EXPORTED_SYMBOLS = ["NounUtils"];
+(typeof define === "undefined" ? function($) { $(require, exports, module); } : define)(function(require, exports, module) {
 
-var NounUtils = {};
+"use strict";
 
-for each (let f in this) if (typeof f === "function") NounUtils[f.name] = f;
-delete NounUtils.QueryInterface;
+/**
+ * A library of noun related utilities.
+ */
+var streamer = require('https!raw.github.com/Gozala/streamer/v0.0.3/streamer')
+var utils = require('./grep')
 
-Components.utils.import("resource://ubiquity/modules/utils.js");
+function keyValues(object) {
+  return Object.keys(object).map(function(key) {
+    return { key: key, value: object[key] }
+  })
+}
+function get(key, object) { return object[key] }
+var getKey = get.bind(null, 'key')
 
-// === {{{ NounUtils.NounType(label, expected, defaults) }}} ===
-//
-// Constructor of a noun type that accepts a specific set of inputs.
-// See {{{NounType._from*}}} methods for details
-// (but do not use them directly).
-//
-// {{{label}}} is an optional string specifying default label of the nountype.
-//
-// {{{expected}}} is the instance of {{{Array}}}, {{{Object}}} or {{{RegExp}}}.
-// The array can optionally be a space-separeted string.
-//
-// {{{defaults}}} is an optional array or space-separated string
-// of default inputs.
-
-function NounType(label, expected, defaults) {
-  if (!(this instanceof NounType))
-    return new NounType(label, expected, defaults);
-
-  if (typeof label !== "string")
-    [label, expected, defaults] = ["?", label, expected];
-
-  if (typeof expected.suggest === "function") return expected;
-
-  function maybe_qw(o) typeof o === "string" ? o.match(/\S+/g) || [] : o;
-  expected = maybe_qw(expected);
-  defaults = maybe_qw(defaults);
-
-  var maker = NounType["_from" + Utils.classOf(expected)];
-  for (let [k, v] in new Iterator(maker(expected))) this[k] = v;
-  this.suggest = maker.suggest;
-  this.label = label;
-  this.noExternalCalls = true;
-  this.cacheTime = -1;
-  if (this.id) this.id += Utils.computeCryptoHash("MD5", (uneval(expected) +
-                                                          uneval(defaults)));
-  if (defaults) {
-    // [[a], [b, c], ...] => [a].concat([b, c], ...) => [a, b, c, ...]
-    this.default =
-      Array.concat.apply(0, [this.suggest(d) for each (d in defaults)]);
+/**
+ * Constructor of a noun that accepts a set of inputs types (array, object,
+ * regexp, string, function) and depending on type delegates to one of it's own
+ * functions (Noun.Array, Noun.Object, Noun.RegExp, Noun.String, Noun.Function).
+ * For details see `Noun` methods.
+ *
+ * Noun also may be called with more than one argument in which case noun will
+ * be created for each of them and composite none of all those nouns is
+ * returned. See `Noun.append` for details of composite nouns.
+ *
+ * With in this implementation `noun` is a function. It takes one `input`
+ * argument and returns [stream] of matching elements paired with a score of
+ * the match. Default value of the `noun` is just an element with a `0` score.
+ * [stream]:http://jeditoolkit.com/streamer/docs/readme.html "stream pattern"
+ */
+function Noun(descriptor, rest) {
+  return !rest ? Noun[descriptor.constructor.name](descriptor) :
+         Noun.append.apply(Noun, Array.prototype.map.call(arguments, Noun))
+}
+exports.Noun = Noun
+/**
+ * Creates a `noun` from the given `stream` of elements. Optionally `serialize`
+ * function may be passed in order to preform match on the serialized elements.
+ * If `serialize` is not passed than match will be performed on `.toString()`
+ * serialized elements.
+ * @param {Function} stream
+ *    Stream of values to create a noun from.
+ * @param {Function} [serialize]
+ *    Optional, serialize function, if passed this `serialize` function is used
+ *    for serializing input elements before preforming match.
+ * @returns {Function}
+ */
+Noun.Stream = function Stream(stream, serialize) {
+  // Composing a `noun` function by binding given `stream` and `serialize`
+  // arguments to `grep` function. This way `noun` function will return stream
+  // of [element, score] pairs, where `score` is a match score of associated
+  // `element` from the given `stream`. Also, elements that don't satisfy match
+  // will not be included.
+  var noun = utils.grep.bind(null, stream, serialize || String)
+  noun.id = noun.displayName = stream.id || stream.displayName || stream.name
+  return noun
+}
+/**
+ * Creates a `noun` out of the given `array` of elements. By default
+ * match is performed on the raw elements, but optionally, `serialize` function
+ * may be passed to preform matches on the serialized elements instead.
+ * @param {Array} array
+ *    Array of elements to create a noun from.
+ * @param {Function} [serialize]
+ *    Optional, serialize function, if passed this `serialize` function is used
+ *    for serializing input elements before preforming match.
+ * @returns {Function}
+ */
+Noun.Array = function Array(array, serialize) {
+  // Creating a stream of elements for the given `array`.
+  var stream = streamer.list.apply(null, array)
+  // Generating an `id` for the given noun.
+  stream.id = array.slice(0, 2) + (array.length > 2 ? ',...' : '')
+  // Creating a noun form the given stream.
+  return Noun.Stream(stream)
+}
+/**
+ * Creates a `noun` from the given `key:value` pairs. By default `key` is used
+ * as match target, but optionally `serialize` function may be passed, in order
+ * to perform match on serialized `key:value` instead.
+ * @param {Object} object
+ *    Hash of `key:values` (Only own properties are used).
+ * @param {Function} [serialize]
+ *    Optional, serialize function, if passed this `serialize` function is used
+ *    for serializing `{ key: key, value: object[key] }` elements before
+ *    preforming a match.
+ * @returns {Function}
+ */
+Noun.Object = function Object(object, serialize) {
+  // Map object's own properties to a key:value pairs and create noun out of it
+  // using `Noun.Array`. If custom `serialize`-r is not passed it defaults to
+  // a function that serializes to property names. This basically means that
+  // filtering on the returned `noun` will happen over the object keys.
+  return Noun.Array(keyValues(object), serialize || getKey)
+}
+/**
+ * Creates a noun from the given `regexp` regular expression and returns it.
+ * Optionally `serialize` argument may be passed, in order to perform match on
+ * the serialize elements. This `noun` will always contain at max one match
+ * since `regexp` either matches input or not.
+ * @param {RegExp} regexp
+ *    Regular expression used to perform match.
+ * @param {Function} [serialize]
+ *    Optional, serialize function, if passed this `serialize` function is used
+ *    for serializing input elements before preforming match.
+ * @returns {Function}
+ */
+Noun.RegExp = function RegExp(regexp, serialize) {
+  serialize = serialize || String
+  function noun(input) {
+    return function stream(next, stop) {
+      var score = utils.score(regexp, input)
+      if (score) next([ input, score ])
+      if (stop) stop()
+    }
   }
+  noun.id = noun.displayName = String(regexp)
+  return noun
 }
-
-// ** {{{ NounUtils.NounType._fromArray(words) }}} **
-//
-// Creates a noun type that accepts a finite list of specific words
-// as the only valid inputs. Those words will be suggested as {{{text}}}s.
-//
-// {{{words}}} is the array of words.
-
-NounType._fromArray = function NT_Array(words)({
-  id: "#na_",
-  name: words.slice(0, 2) + (words.length > 2 ? ",..." : ""),
-  _list: [makeSugg(w) for each (w in words)],
-});
-
-// ** {{{ NounUtils.NounType._fromObject(dict) }}} **
-//
-// Creates a noun type from the given key:value pairs, the key being
-// the {{{text}}} attribute of its suggest and the value {{{data}}}.
-//
-// {{{dict}}} is the object of text:data pairs.
-
-NounType._fromObject = function NT_Object(dict) {
-  var list = [makeSugg(key, null, dict[key]) for (key in dict)];
-  return {
-    name: ([s.text for each (s in list.slice(0, 2))] +
-           (list.length > 2 ? ",..." : "")),
-    _list: list,
-  };
-};
-
-NounType._fromArray.suggest = NounType._fromObject.suggest = (
-  function NT_suggest(text) grepSuggs(text, this._list));
-
-// ** {{{ NounUtils.NounType._fromRegExp(regexp) }}} **
-//
-// Creates a noun type from the given regular expression object
-// and returns it. The {{{data}}} attribute of the noun type is
-// the {{{match}}} object resulting from the regular expression
-// match.
-//
-// {{{regexp}}} is the RegExp object that checks inputs.
-
-NounType._fromRegExp = function NT_RegExp(regexp) ({
-  id: "#nr_",
-  name: regexp + "",
-  rankLast: regexp.test(""),
-  _regexp: regexp,
-});
-NounType._fromRegExp.suggest = function NT_RE_suggest(text, html, cb,
-                                                      selectionIndices) {
-  var match = text.match(this._regexp);
-  if (!match) return [];
-  // ToDo: how to score global match
-  var score = "index" in match ? matchScore(match) : 1;
-  return [makeSugg(text, html, match, score, selectionIndices)];
-};
-
-// === {{{ NounUtils.matchScore(match) }}} ===
-//
-// Calculates the score for use in suggestions from
-// a result array ({{{match}}}) of {{{RegExp#exec}}}.
-
-const SCORE_BASE = 0.3;
-const SCORE_LENGTH = 0.25;
-const SCORE_INDEX = 1 - SCORE_BASE - SCORE_LENGTH;
-
-function matchScore(match) {
-  var inLen = match.input.length;
-  return (SCORE_BASE +
-          SCORE_LENGTH * Math.sqrt(match[0].length / inLen) +
-          SCORE_INDEX  * (1 - match.index / inLen));
+/**
+ * Creates a noun from the given `pattern` string and returns it.
+ * Optionally `serialize` argument may be passed, in order to perform match on
+ * the serialize elements. This `noun` will contain at max one match since
+ * pattern either matches input or not.
+ * @param {String} pattern
+ *    Regular expression used to perform match.
+ * @param {Function} [serialize]
+ *    Optional, serialize function, if passed this `serialize` function is used
+ *    for serializing input elements before preforming match.
+ * @returns {Function}
+ */
+Noun.String = function String(pattern, serialize) {
+  return Noun.RegExp(utils.Pattern(pattern, 'i'), serialize)
 }
-
-// === {{{NounUtils.makeSugg(text, html, data, score, selectionIndices)}}} ===
-//
-// Creates a suggestion object, filling in {{{text}}} and {{{html}}} if missing
-// and constructing {{{summary}}} from {{{text}}} and {{{selectionIndices}}}.
-// At least one of {{{text}}}, {{{html}}} or {{{data}}} is required.
-//
-// {{{text}}} can be any string.
-//
-// {{{html}}} must be a valid HTML string.
-//
-// {{{data}}} can be any value.
-//
-// {{{score}}} is an optional float number representing
-// the score of the suggestion. Defaults to {{{1.0}}}.
-//
-// {{{selectionIndices}}} is an optional array containing the start and end
-// indices of selection within {{{text}}}.
-
-function makeSugg(text, html, data, score, selectionIndices) {
-  if (text == null && html == null && arguments.length < 3)
-    // all inputs empty!  There is no suggestion to be made.
-    return null;
-
-  // Shift the argument if appropriate:
-  if (typeof score === "object") {
-    selectionIndices = score;
-    score = null;
+/**
+ * This does not really does anything other than setting `displayName` and `id`
+ * properties on the given `noun`. Given `noun` is returned back. This is useful
+ * for normalization custom function based `noun`-s.
+ * @param {Function} noun
+ * @returns {Function}
+ */
+Noun.Function = function Function(noun) {
+  noun.id = noun.displayName = noun.id || noun.displayName || noun.name
+  return noun
+}
+/**
+ * Combines multiple nouns into one and returns it. Given `noun` will match
+ * elements from all the nouns that were combined here.
+ * @params {Function} noun
+ * @returns {Function}
+ */
+Noun.append = function append() {
+  var nouns = Array.prototype.slice(arguments, 0)
+  function noun(input) {
+    return streamer.append.apply(null, nouns.map(function(noun) {
+      return noun(input)
+    }))
   }
-
-  // Fill in missing fields however we can:
-  if (text != null) text += "";
-  if (html != null) html += "";
-  if (!text && data != null)
-    text = data.toString();
-  if (!html && text >= "")
-    html = Utils.escapeHtml(text);
-  if (!text && html >= "")
-    text = html.replace(/<[^>]*>/g, "");
-
-  // Create a summary of the text:
-  var snippetLength = 35;
-  var summary = (text.length > snippetLength
-                 ? text.slice(0, snippetLength - 1) + "\u2026"
-                 : text);
-
-  // If the input comes all or in part from a text selection,
-  // we'll stick some html tags into the summary so that the part
-  // that comes from the text selection can be visually marked in
-  // the suggestion list.
-  var [start, end] = selectionIndices || 0;
-  summary = (
-    start < end
-    ? (Utils.escapeHtml(summary.slice(0, start)) +
-       "<span class='selection'>" +
-       Utils.escapeHtml(summary.slice(start, end)) +
-       "</span>" +
-       Utils.escapeHtml(summary.slice(end)))
-    : Utils.escapeHtml(summary));
-
-  return {
-    text: text, html: html, data: data,
-    summary: summary, score: score || 1};
+  noun.id = nouns.map(function(noun) { return noun.id }).join(' | ')
+  return noun
 }
 
-// === {{{ NounUtils.grepSuggs(input, suggs, key) }}} ===
-//
-// A helper function to grep a list of suggestion objects by user input.
-// Returns an array of filtered suggetions, each of them assigned {{{score}}}
-// calculated by {{{NounUtils.matchScore()}}}.
-//
-// {{{input}}} is a string that filters the list.
-//
-// {{{suggs}}} is an array or dictionary of suggestion objects.
-//
-// {{{key}}} is an optional string to specify the target property
-// to match with. Defaults to {{{"text"}}}.
-
-function grepSuggs(input, suggs, key) {
-  if (!input) return [];
-  if (key == null) key = "text";
-  var re = Utils.regexp(input, "i"), match;
-  return ([(sugg.score = matchScore(match), sugg)
-           for each (sugg in suggs) if ((match = re(sugg[key])))]
-          .sort(byScoreDescending));
-}
-
-function byScoreDescending(a, b) b.score - a.score;
-
-// === {{{ NounUtils.mixNouns(label, nouns) }}} ===
-//
-// Creates a noun by combining two or more nouns.
-//
-// {{{label}}} is an optional string specifying the created noun's label.
-//
-// {{{nouns}}} is the array of nouns.
-
-function mixNouns(label) {
-  var gotLabel = typeof label === "string";
-  var nouns = gotLabel ? arguments[1] : label;
-  if (!Utils.isArray(nouns))
-    nouns = Array.slice(arguments, gotLabel ? 1 : 0);
-  function mixer(key) function suggestMixed() {
-    var val, suggsList = [
-      typeof val === "function" ? val.apply(noun, arguments) : val
-      for each (noun in nouns) if ((val = noun[key])) ];
-    return suggsList.concat.apply([], suggsList); // flatten
-  };
-  return {
-    label: gotLabel ? label : [n.label || "?" for each (n in nouns)].join("|"),
-    rankLast: nouns.some(function (n) n.rankLast),
-    noExternalCalls: nouns.every(function (n) n.noExternalCalls),
-    suggest: mixer("suggest"),
-    default: nouns.some(function (n) "default" in n) && mixer("default"),
-  };
-}
+});
