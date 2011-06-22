@@ -27,15 +27,16 @@ function toArray(stream, callback) {
   return error || value
 }
 
-exports["test noun from array"] = function(assert, done) {
-  var dogs = Noun(["poodle", "golden retreiver", "beagle", "bulldog", "husky"])
+exports['test noun from array'] = function(assert) {
+  var dogs = Noun(['poodle', 'golden retreiver', 'beagle', 'bulldog', 'husky'])
+  assert.equal(dogs.id, 'poodle,golden retreiver,..', 'noun id was set')
   assert.deepEqual(toArray(dogs()), [
     [ 'poodle', 0.75 ],
     [ 'golden retreiver', 0.75 ],
     [ 'beagle', 0.75 ],
     [ 'bulldog', 0.75 ],
     [ 'husky', 0.75 ]
-  ], "all elements get '.75' score if no input provided");
+  ], 'all elements get ".75" score if no input provided');
 
   assert.deepEqual(toArray(dogs('')), [
     [ 'poodle', 0.75 ],
@@ -43,10 +44,10 @@ exports["test noun from array"] = function(assert, done) {
     [ 'beagle', 0.75 ],
     [ 'bulldog', 0.75 ],
     [ 'husky', 0.75 ]
-  ], "all elements get '.75' score if input is '' provided");
+  ], 'all elements get ".75" score if input is "" provided');
 
   assert.deepEqual(toArray(values(dogs(' '))), [ 'golden retreiver' ],
-                   "white space is significant");
+                   'white space is significant');
 
   assert.deepEqual(toArray(values(dogs('p'))), [ 'poodle' ], 'found 1 result')
   assert.deepEqual(toArray(values(dogs('b'))), [ 'beagle', 'bulldog' ],
@@ -56,6 +57,41 @@ exports["test noun from array"] = function(assert, done) {
     'beagle',
     'husky',
   ], 'escaped regexp patterns work')
+}
+
+exports['test noun from array with serializer'] = function(assert) {
+  var dogs = Noun.Array([
+    { name: 'poodle' },
+    { name: 'golden retreiver' },
+    { name: 'beagle' },
+    { name: 'bulldog' },
+    { name: 'husky' }
+  ], function(element) { return element.name })
+
+  assert.equal(dogs.id, 'poodle,golden retreiver,..', 'noun id was set')
+
+  assert.deepEqual(toArray(dogs()), [
+    [ { name: 'poodle' }, 0.75 ],
+    [ { name: 'golden retreiver' }, 0.75 ],
+    [ { name: 'beagle' }, 0.75 ],
+    [ { name: 'bulldog' }, 0.75 ],
+    [ { name: 'husky' }, 0.75 ]
+  ], 'all elements get ".75" score if no input provided')
+
+  assert.deepEqual(toArray(dogs('')), [
+    [ { name: 'poodle' }, 0.75 ],
+    [ { name: 'golden retreiver' }, 0.75 ],
+    [ { name: 'beagle' }, 0.75 ],
+    [ { name: 'bulldog' }, 0.75 ],
+    [ { name: 'husky' }, 0.75 ]
+  ], 'all elements get ".75" score if input is "" provided');
+
+  assert.deepEqual(toArray(values(dogs('p'))), [ { name: 'poodle' } ],
+                   'found 1 result')
+  assert.deepEqual(toArray(values(dogs('b'))),
+                   [{ name: 'beagle' }, { name: 'bulldog' }], 'found 2 results')
+  assert.deepEqual(toArray(values(dogs(' '))), [ { name: 'golden retreiver' } ],
+                   'white space is significant');
 }
 
 });

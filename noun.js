@@ -121,10 +121,11 @@ Noun.Stream = function Stream(stream, serialize) {
 Noun.Array = function Array(array, serialize) {
   // Creating a stream of elements for the given `array`.
   var stream = streamer.list.apply(null, array)
+  serialize = serialize || String
   // Generating an `id` for the given noun.
-  stream.id = array.slice(0, 2) + (array.length > 2 ? ',...' : '')
+  stream.id = array.slice(0, 2).map(serialize) + (array.length > 2 ? ',..' : '')
   // Creating a noun form the given stream.
-  return Noun.Stream(stream)
+  return Noun.Stream(stream, serialize)
 }
 /**
  * Creates a `noun` from the given `key:value` pairs. By default `key` is used
