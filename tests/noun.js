@@ -36,7 +36,7 @@ exports['test noun from array'] = function(assert) {
     [ 'beagle', 0.75 ],
     [ 'bulldog', 0.75 ],
     [ 'husky', 0.75 ]
-  ], 'all elements get ".75" score if no input provided');
+  ], 'all elements get ".75" score if no input provided')
 
   assert.deepEqual(toArray(dogs('')), [
     [ 'poodle', 0.75 ],
@@ -44,7 +44,7 @@ exports['test noun from array'] = function(assert) {
     [ 'beagle', 0.75 ],
     [ 'bulldog', 0.75 ],
     [ 'husky', 0.75 ]
-  ], 'all elements get ".75" score if input is "" provided');
+  ], 'all elements get ".75" score if input is "" provided')
 
   assert.deepEqual(toArray(values(dogs(' '))), [ 'golden retreiver' ],
                    'white space is significant');
@@ -84,14 +84,81 @@ exports['test noun from array with serializer'] = function(assert) {
     [ { name: 'beagle' }, 0.75 ],
     [ { name: 'bulldog' }, 0.75 ],
     [ { name: 'husky' }, 0.75 ]
-  ], 'all elements get ".75" score if input is "" provided');
+  ], 'all elements get ".75" score if input is "" provided')
 
   assert.deepEqual(toArray(values(dogs('p'))), [ { name: 'poodle' } ],
                    'found 1 result')
   assert.deepEqual(toArray(values(dogs('b'))),
                    [{ name: 'beagle' }, { name: 'bulldog' }], 'found 2 results')
   assert.deepEqual(toArray(values(dogs(' '))), [ { name: 'golden retreiver' } ],
-                   'white space is significant');
+                   'white space is significant')
 }
+
+exports['test noun from object'] = function(assert) {
+  var cities = Noun({
+    kiev: 1985,
+    tbilisi: 1985,
+    amsterdam: 2008,
+    paris: 2010
+  })
+
+  assert.deepEqual(toArray(cities()).sort(), [
+    [ { key: 'kiev', value: 1985 }, 0.75 ],
+    [ { key: 'tbilisi', value: 1985 }, 0.75 ],
+    [ { key: 'amsterdam', value: 2008 }, 0.75 ],
+    [ { key: 'paris', value: 2010 }, 0.75 ]
+  ].sort(), 'all elements get ".75" score if no input provided');
+
+   assert.deepEqual(toArray(cities('')).sort(), [
+    [ { key: 'kiev', value: 1985 }, 0.75 ],
+    [ { key: 'tbilisi', value: 1985 }, 0.75 ],
+    [ { key: 'amsterdam', value: 2008 }, 0.75 ],
+    [ { key: 'paris', value: 2010 }, 0.75 ]
+  ].sort(), 'all elements get ".75" score if input is "" provided');
+
+  assert.deepEqual(toArray(values(cities('pa'))).sort(),
+                   [ { key: 'paris', value: 2010 } ].sort(),
+                   'found 1 result')
+  assert.deepEqual(toArray(values(cities('is'))).sort(),
+                   [ { key: 'tbilisi', value: 1985 },
+                     { key: 'paris', value: 2010 } ].sort(),
+                   'found 2 results')
+  assert.deepEqual(toArray(values(cities(' '))), [],
+                   'white space is significant')
+}
+
+exports['test noun from object with serializer'] = function(assert) {
+  var cities = Noun.Object({
+    kiev: 1985,
+    tbilisi: 1985,
+    amsterdam: 2008,
+    paris: 2010
+  }, function serialize(element) { return element.value })
+
+  assert.deepEqual(toArray(cities()).sort(), [
+    [ { key: 'kiev', value: 1985 }, 0.75 ],
+    [ { key: 'tbilisi', value: 1985 }, 0.75 ],
+    [ { key: 'amsterdam', value: 2008 }, 0.75 ],
+    [ { key: 'paris', value: 2010 }, 0.75 ]
+  ].sort(), 'all elements get ".75" score if no input provided');
+
+   assert.deepEqual(toArray(cities('')).sort(), [
+    [ { key: 'kiev', value: 1985 }, 0.75 ],
+    [ { key: 'tbilisi', value: 1985 }, 0.75 ],
+    [ { key: 'amsterdam', value: 2008 }, 0.75 ],
+    [ { key: 'paris', value: 2010 }, 0.75 ]
+  ].sort(), 'all elements get ".75" score if input is "" provided');
+
+  assert.deepEqual(toArray(values(cities(2010))).sort(),
+                   [ { key: 'paris', value: 2010 } ].sort(),
+                   'found 1 result')
+  assert.deepEqual(toArray(values(cities(19))).sort(),
+                   [ { key: 'kiev', value: 1985 },
+                     { key: 'tbilisi', value: 1985 } ].sort(),
+                   'found 2 results')
+  assert.deepEqual(toArray(values(cities(' '))), [],
+                   'white space is significant')
+}
+
 
 });
